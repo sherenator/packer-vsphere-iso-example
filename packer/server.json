@@ -1,131 +1,137 @@
 {
-    "builders": [
-      {
-        "type": "vsphere-iso",
-  
-        "vcenter_server":      "{{user `vcenter_server`}}",
-        "username":            "{{user `username`}}",
-        "password":            "{{user `password`}}",
-        "insecure_connection": "true",
-  
-        "vm_name": "ubuntu18_server_no_rdp",
-        "datastore": "{{user `datastore`}}",
-        "folder": "{{user `folder`}}",
-        "host":     "{{user `host`}}",
-        "convert_to_template": "true",
-        "cluster": "{{user `cluster`}}",
-        "network": "{{user `network`}}",
-        "resource_pool": "{{user `resource_pool`}}",
-        "boot_order": "disk,cdrom",
-  
-        "guest_os_type": "ubuntu64Guest",
-  
-        "ssh_username": "{{user `ssh_username`}}",
-        "ssh_password": "{{user `ssh_password`}}",
-  
-        "CPUs":             2,
-        "RAM":              2048,
-        "RAM_reserve_all": true,
-  
-        "disk_controller_type":  "pvscsi",
-        "disk_size":        10737,
-        "disk_thin_provisioned": true,
-  
-        "network_card": "vmxnet3",
-  
-        "iso_urls": "http://cdimage.ubuntu.com/releases/18.04/release/ubuntu-18.04.2-server-amd64.iso",
-        "iso_checksum": "a2cb36dc010d98ad9253ea5ad5a07fd6b409e3412c48f1860536970b073c98f5",
-        "iso_checksum_type": "sha256",
-
-        "floppy_files": [
-          "./http/preseed_server.cfg"
-        ],
-        "boot_command": [
-          "<enter><wait><f6><wait><esc><wait>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs><bs><bs><bs><bs><bs><bs><bs>",
-          "<bs><bs><bs>",
-          "/install/vmlinuz",
-          " initrd=/install/initrd.gz",
-          " priority=critical",
-          " locale=en_US",
-          " file=/media/preseed_server.cfg",
-          "<enter>"
-        ]
-      }
-    ],
-  
-    "provisioners": [
-      {
-        "type": "shell",
-        "inline": ["echo 'template build - starting configuration by deploying base packages/applications'"]
-      },
-      {
-        "execute_command": "echo '{{user `password`}}' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
-        "scripts": [
-          "scripts/packer_install_base_packages.sh",
-          "scripts/packer_image_cleanup.sh"
-        ],
-        "type": "shell",
-        "expect_disconnect": true,
-        "pause_before": "10s"
-      },
-      {
-        "type": "shell",
-        "inline": ["echo 'template build - start configuring ssh access'"]
-      },
-      {
-        "type": "shell",
-        "inline": [
-          "mkdir -p {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh"
-        ]
-      },
-      {
-        "type": "file",
-        "source": "{{user `ssh_key_src_pub`}}",
-        "destination": "{{user `image_home_dir`}}{{user `ssh_username`}}/.ssh/authorized_keys"
-      },
-      {
-        "type": "shell",
-        "inline": [
-          "sudo chown -R {{user `ssh_username`}}:{{user `ssh_username`}} {{user `image_home_dir`}}{{user `ssh_username`}}",
-          "sudo chmod go-w {{user `image_home_dir`}}{{user `ssh_username`}}/",
-          "sudo chmod 700 {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh",
-          "sudo chmod 600 {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh/authorized_keys"
-          ]
-      },
-      {
-        "type": "shell",
-        "inline": ["echo 'template build - test the image'"]
-      },
-      {
-        "type": "inspec",
-        "profile": "test/ImageBuild"
-      },
-      {
-        "type": "shell",
-        "inline": ["echo 'template build - disable ssh password access'"]
-      },
-      {
-        "type": "shell",
-        "inline": [
-          "sudo su root -c \"sed '/ChallengeResponseAuthentication/d' -i /etc/ssh/sshd_config | sudo bash\"",
-          "sudo su root -c \"sed '/PasswordAuthentication/d' -i /etc/ssh/sshd_config | sudo bash\"",
-          "sudo su root -c \"sed '/UsePAM/d' -i /etc/ssh/sshd_config | sudo bash\"",
-          "sudo su root -c \"echo  >> /etc/ssh/sshd_config | sudo bash\"",
-          "sudo su root -c \"echo 'ChallengeResponseAuthentication no' >> /etc/ssh/sshd_config | sudo bash\"",
-          "sudo su root -c \"echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config | sudo bash\""
-        ]
-      },
-      {
-        "type": "shell",
-        "inline": ["echo 'template build - complete'"]
-      }
-    ]
+  "builders": [
+    {
+      "CPUs": 2,
+      "RAM": 2048,
+      "RAM_reserve_all": true,
+      "boot_command": [
+        "<esc><wait>",
+        "<esc><wait>",
+        "<enter><wait>",
+        "/install/vmlinuz<wait>",
+        " auto<wait>",
+        " console-setup/ask_detect=false<wait>",
+        " console-setup/layoutcode=us<wait>",
+        " console-setup/modelcode=pc105<wait>",
+        " debconf/frontend=noninteractive<wait>",
+        " debian-installer=en_US.UTF-8<wait>",
+        " fb=false<wait>",
+        " initrd=/install/initrd.gz<wait>",
+        " kbd-chooser/method=us<wait>",
+        " keyboard-configuration/layout=USA<wait>",
+        " keyboard-configuration/variant=USA<wait>",
+        " locale=en_US.UTF-8<wait>",
+        " netcfg/get_domain=vm<wait>",
+        " netcfg/get_hostname=vagrant<wait>",
+        " grub-installer/bootdev=/dev/sda<wait>",
+        " noapic<wait>",
+        " file=/media/preseed_server.cfg",
+        " -- <wait>",
+        "<enter><wait>"
+      ],
+      "boot_order": "disk,cdrom",
+      "cluster": "{{user `cluster`}}",
+      "convert_to_template": "true",
+      "datastore": "{{user `datastore`}}",
+      "disk_controller_type": "pvscsi",
+      "floppy_files": [
+        "C:\\code\\packer-vsphere-iso-example-master\\packer\\http\\preseed_server.cfg"
+      ],
+      "folder": "{{user `folder`}}",
+      "guest_os_type": "ubuntu64Guest",
+      "host": "{{user `host`}}",
+      "insecure_connection": "true",
+      "iso_checksum": "sha256:F5CBB8104348F0097A8E513B10173A07DBC6684595E331CB06F93F385D0AECF6",
+      "iso_urls": "C:\\Users\\Administrator.LAB.003\\Downloads\\ubuntu-18.04.6-server-amd64.iso",
+      "network_adapters": [
+        {
+          "network": "{{user `network`}}",
+          "network_card": "vmxnet3"
+        }
+      ],
+      "password": "{{user `password`}}",
+      "resource_pool": "{{user `resource_pool`}}",
+      "ssh_password": "{{user `ssh_password`}}",
+      "ssh_username": "{{user `ssh_username`}}",
+      "storage": [
+        {
+          "disk_size": 10737,
+          "disk_thin_provisioned": true
+        }
+      ],
+      "type": "vsphere-iso",
+      "username": "{{user `username`}}",
+      "vcenter_server": "{{user `vcenter_server`}}",
+      "vm_name": "ubuntu18_server_no_rdp"
+    }
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "echo 'template build - starting configuration by deploying base packages/applications'"
+      ],
+      "type": "shell"
+    },
+    {
+      "execute_command": "echo '{{user `password`}}' | {{.Vars}} sudo -E -S bash '{{.Path}}'",
+      "expect_disconnect": true,
+      "pause_before": "10s",
+      "scripts": [
+        "C:\\code\\packer-vsphere-iso-example-master\\packer\\scripts\\packer_install_base_packages.sh",
+        "C:\\code\\packer-vsphere-iso-example-master\\packer\\scripts\\packer_image_cleanup.sh"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "echo 'template build - start configuring ssh access'"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "mkdir -p {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "sudo chown -R {{user `ssh_username`}}:{{user `ssh_username`}} {{user `image_home_dir`}}{{user `ssh_username`}}",
+        "sudo chmod go-w {{user `image_home_dir`}}{{user `ssh_username`}}/",
+        "sudo chmod 700 {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh",
+        "sudo chmod 600 {{user `image_home_dir`}}{{user `ssh_username`}}/.ssh/authorized_keys"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "echo 'template build - test the image'"
+      ],
+      "type": "shell"
+    },
+    {
+      "profile": "test/ImageBuild",
+      "type": "inspec"
+    },
+    {
+      "inline": [
+        "echo 'template build - complete'"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "cluster": "lab.local cluster",
+    "datastore": "ISCSI-LAB-SAN01 - R740 Spinners - 10TiB",
+    "folder": "",
+    "datacenter": "Datacenter",
+    "host": "lab-esx-03.lab.local",
+    "network": "LAB-ESX-03 - VLAN 999",
+    "username": "administrator@vsphere.local",
+    "password": "****",
+    "resource_pool": "",
+    "ssh_password": "vagrant",
+    "ssh_username": "vagrant",
+    "vcenter_server": "10.100.1.60"
   }
+}
